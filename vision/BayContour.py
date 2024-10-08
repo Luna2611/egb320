@@ -3,18 +3,19 @@ import numpy as np
 
 class BayContour:
 
-    lower_bound = np.array([82, 69, 72])
-    upper_bound = np.array([106, 255, 255])
+    lower_bound = np.array([86, 50, 0])
+    upper_bound = np.array([97, 191, 237])
 
-    mask = None    
+    mask = None 
+    scale_factor = 0   
 
-    def __init__(self):
-        pass
+    def __init__(self, scale_factor):
+        self.scale_factor = scale_factor
     
     def GetContour(self, hsv_frame):
         
         blurred_frame = cv2.GaussianBlur(hsv_frame, (5, 5), 0)
-        self.mask = cv2.inRange(blurred_frame, self.lower_bound, self.upper_bound)      
+        self.mask = cv2.inRange(blurred_frame, self.lower_bound, self.upper_bound)
 
         # Filter mask and find contours
         contours = []
@@ -24,11 +25,12 @@ class BayContour:
         bay_coor = []
         if len(contours) > 0:
             largest_contour = max(contours, key=cv2.contourArea)
-            # Draw bounding box around each detected orange item
-            x, y, w, h = cv2.boundingRect(largest_contour)
-            cX, cY = self.__calculateCentroid(largest_contour)   
-            bay_coor = [ [x, y] , [w, h], [cX, cY] ]         
-        
+            if cv2.contourArea(largest_contour) > 500*self.scale_factor:
+                # Draw bounding box around each detected orange item
+                x, y, w, h = cv2.boundingRect(largest_contour)
+                cX, cY = self.__calculateCentroid(largest_contour)   
+                bay_coor = [ [x, y] , [w, h], [cX, cY] ]         
+            
         return contours, bay_coor
                 
     def __processMask(self):

@@ -3,19 +3,20 @@ import numpy as np
 
 class ItemContour:
 
-    lower_bound = np.array([101, 69, 72])
-    upper_bound = np.array([114, 255, 255])
+    lower_bound = np.array([96, 150, 110])
+    upper_bound = np.array([110, 255, 255])
 
-    mask = None    
+    mask = None
+    scale_factor = 0    
 
-    def __init__(self):
-        pass
+    def __init__(self, scale_factor):
+        self.scale_factor = scale_factor
     
     def GetContour(self, hsv_frame):
         
         # Apply Gaussian blur and morphological operations
         blurred_frame = cv2.GaussianBlur(hsv_frame, (5, 5), 0)
-        self.mask = cv2.inRange(blurred_frame, self.lower_bound, self.upper_bound)      
+        self.mask = cv2.inRange(blurred_frame, self.lower_bound, self.upper_bound)
 
         # Filter mask and find contours
         contours = self.__processMask()         
@@ -26,7 +27,7 @@ class ItemContour:
             for contour in contours:
                 area = cv2.contourArea(contour)
 
-                if area > 1000:
+                if area > 5*self.scale_factor:
                     # Draw bounding box around each detected orange item
                     x, y, w, h = cv2.boundingRect(contour)
                     cX, cY = self.__calculateCentroid(contour)

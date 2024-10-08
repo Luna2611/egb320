@@ -5,23 +5,23 @@ from scipy.spatial import distance
 class MarkerContour:
 
     lower_bound = np.array([0, 0, 0])
-    upper_bound = np.array([179, 54, 50])
+    upper_bound = np.array([179, 110, 75])
 
     mask = None
+    scale_factor = 0
 
-    def __init__(self):
-        pass
+    def __init__(self, scale_factor):
+        self.scale_factor = scale_factor
     
     def GetContour(self, hsv_frame):
-        
         # Apply Gaussian blur and morphological operations
-        blurred_frame = cv2.GaussianBlur(hsv_frame, (5, 5), 0)
-        self.mask = cv2.inRange(blurred_frame, self.lower_bound, self.upper_bound)      
+        blurred_frame = cv2.GaussianBlur(hsv_frame, (5, 5), 0) 
+        self.mask = cv2.inRange(blurred_frame, self.lower_bound, self.upper_bound)           
 
         # Filter mask and find contours
         contours = self.__processMask()
 
-        circle_centers = []
+        circles = []
         bay_marker = []
         row_marker = []
 
@@ -31,24 +31,25 @@ class MarkerContour:
             perimeter = cv2.arcLength(contour, True)
 
             # Circles
-            if perimeter > 0: 
+            if perimeter > 0 and area > 10*self.scale_factor: 
                 circularity = 4 * np.pi * (area / (perimeter ** 2))
-                if 0.4 < circularity < 1.3:  # Circular threshold for aisle markers
+                if 0.75 < circularity < 1.3: # Circular threshold for aisle markers
                     # Fit a minimum enclosing circle
                     (x, y), radius = cv2.minEnclosingCircle(contour)
                     center = (int(x), int(y))
                     radius = int(radius)
-                    circle_centers.append(center)
+                    circles.append([center, radius])
 
-                else:
                 # If not circular, check for square aspect ratio
                     x, y, w, h = cv2.boundingRect(contour)
-                    cX, cY = self.__calculateCentroid(contour)
-                    bay_marker = [ [x, y], [w, h], [cX, cY] ]
-
-        if len(circle_centers) != 0:
+                    aspect_ratio = float(w) / h
+                    if 1 : #0.3 < aspect_ratio < 1.1:  # Ensure it's approximately a square
+                        cX, cY = self.__calculateCentroid(contour)
+                        bay_marker = [[x, y], [w, h], [cX, cY]]
+                    
+        if len(circles) != 0:
             # Group the circles by proximity
-            circle_groups = self.__groupCircles(circle_centers, threshold=150) 
+            circle_groups = self.__groupCircles(circles, threshold=600*self.scale_factor) 
 
             # Label aisles based on the number of circles in each group
             for i, group in enumerate(circle_groups, start=1):
@@ -62,14 +63,15 @@ class MarkerContour:
                     aisle_label = 3
 
                 #Calculate the average position to display the label
-                avg_x = int(sum([c[0] for c in group]) / len(group))
-                avg_y = int(sum([c[1] for c in group]) / len(group))
+                # Sum x and y coordinates separately
+                avg_x = int(sum([c[0][0] for c in group]) / len(group))  # Sum the x-coordinates
+                avg_y = int(sum([c[0][1] for c in group]) / len(group))  # Sum the y-coordinates
                 row_marker = [aisle_label, radius, avg_x, avg_y]
 
-        return contours, bay_marker, row_marker
+        return circles, bay_marker, row_marker
 
     
-    def __processMask(self):        
+    def __processMask(self): 
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
         mask_clean = cv2.morphologyEx(self.mask, cv2.MORPH_CLOSE, kernel)
         mask_processed = cv2.morphologyEx(mask_clean, cv2.MORPH_OPEN, kernel)
@@ -79,18 +81,18 @@ class MarkerContour:
 
         return contours
     
-    def __groupCircles(self, centers, threshold=100):
+    def __groupCircles(self, circles, threshold=100):
         groups = []
-        for center in centers:
+        for circle in circles:
             added = False
+            center = circle[0]
             for group in groups:
-                # Check if the center is close to any other center in the group
-                if any(distance.euclidean(center, c) < threshold for c in group):
-                    group.append(center)
+                if any(distance.euclidean(center, c[0]) < threshold for c in group):
+                    group.append(circle)  # Store full circle (center, radius)
                     added = True
                     break
             if not added:
-                groups.append([center])
+                groups.append([circle])
         return groups
     
     def __calculateCentroid(self, contour):

@@ -3,13 +3,14 @@ import numpy as np
 
 class ObstacleContour:
 
-    lower_bound = np.array([32, 44, 49])
-    upper_bound = np.array([50, 255, 255])
+    lower_bound = np.array([30, 77, 0])
+    upper_bound = np.array([47, 180, 78])
 
-    mask = None    
+    mask = None
+    scale_factor = 0    
 
-    def __init__(self):
-        self.mask = None
+    def __init__(self, scale_factor):
+        self.scale_factor = scale_factor
     
     def GetContour(self, hsv_frame):
 
@@ -24,7 +25,7 @@ class ObstacleContour:
         obstacles_coor = []
         for contour in contours:
             area = cv2.contourArea(contour)
-            if area > 200:  # Adjust this threshold based on obstacle size
+            if (area > 700*self.scale_factor):  # Adjust this threshold based on obstacle size
                 # Draw bounding box around each detected obstacle
                 x, y, w, h = cv2.boundingRect(contour)
                 cX, cY = self.__calculateCentroid(contour)

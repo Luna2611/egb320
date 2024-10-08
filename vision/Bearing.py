@@ -25,8 +25,8 @@ class Bearing:
         #theta_deg = math.degrees(self.__wrapToPi(theta))
 
         # Pixel offset from center
-        px_offset = cx - self.center_x
-        theta_deg = px_offset * self.angle_per_px
+        theta_deg = cx - self.center_x
+        #theta_deg = px_offset * self.angle_per_px
 
         return theta_deg
     

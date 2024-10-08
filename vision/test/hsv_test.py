@@ -11,6 +11,8 @@ FRAME_HEIGHT = 308
 
 #create a camera object
 cap = picamera2.Picamera2()
+cap.controls.ExposureTime = 5000
+cap.controls.AnalogueGain = 0.8
 
 #print the different camera resolutions/modes 
 #the sensor can be configured for

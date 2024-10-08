@@ -6,10 +6,11 @@ class ShelfContour:
     lower_bound = np.array([0, 108, 24])
     upper_bound = np.array([20, 255, 255])
 
-    mask = None    
+    mask = None
+    scale_factor = 0    
 
-    def __init__(self):
-        pass
+    def __init__(self, scale_factor):
+        self.scale_factor = scale_factor
     
     def GetContour(self, hsv_frame):
         
@@ -22,15 +23,17 @@ class ShelfContour:
 
         # Detect Obstable
         shelfs_coor = []
+        areas = []
         for contour in combined_contours:
             area = cv2.contourArea(contour)
-            if area > 1500:  # Adjust this threshold based on shelf size
+            if area > 9000*self.scale_factor:  # Adjust this threshold based on shelf size
                 # Draw bounding box around each detected shelf
                 x, y, w, h = cv2.boundingRect(contour)
                 cX, cY = self.__calculateCentroid(contour)
                 shelfs_coor.append([ [x, y] , [w, h], [cX, cY] ])
+                areas.append(area)
 
-        return combined_contours, shelfs_coor
+        return areas, shelfs_coor
 
     # Function to process a mask and find contours            
     def __processMask(self):
