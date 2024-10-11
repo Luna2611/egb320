@@ -5,7 +5,7 @@ from scipy.spatial import distance
 class MarkerContour:
 
     lower_bound = np.array([0, 0, 0])
-    upper_bound = np.array([179, 110, 75])
+    upper_bound = np.array([179, 255, 75])
 
     mask = None
     scale_factor = 0
@@ -43,7 +43,7 @@ class MarkerContour:
                 # If not circular, check for square aspect ratio
                     x, y, w, h = cv2.boundingRect(contour)
                     aspect_ratio = float(w) / h
-                    if 1 : #0.3 < aspect_ratio < 1.1:  # Ensure it's approximately a square
+                    if 0.3 < aspect_ratio < 1.1:  # Ensure it's approximately a square
                         cX, cY = self.__calculateCentroid(contour)
                         bay_marker = [[x, y], [w, h], [cX, cY]]
                     

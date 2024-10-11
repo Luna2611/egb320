@@ -26,7 +26,7 @@ class ShelfContour:
         areas = []
         for contour in combined_contours:
             area = cv2.contourArea(contour)
-            if area > 9000*self.scale_factor:  # Adjust this threshold based on shelf size
+            if area > 900*self.scale_factor:  # Adjust this threshold based on shelf size #was 9000
                 # Draw bounding box around each detected shelf
                 x, y, w, h = cv2.boundingRect(contour)
                 cX, cY = self.__calculateCentroid(contour)

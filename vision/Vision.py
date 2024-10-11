@@ -3,15 +3,15 @@ import picamera2
 import numpy as np
 import time
 
-from Distance import Distance
-from Bearing import Bearing
+from position.Distance import Distance
+from position.Bearing import Bearing
 
-from MarkerContour import MarkerContour
-from ItemContour import ItemContour
-from ObstacleContour import ObstacleContour
-from ShelfContour import ShelfContour
-from BayContour import BayContour
-from WallContour import WallContour
+from contours.MarkerContour import MarkerContour
+from contours.ItemContour import ItemContour
+from contours.ObstacleContour import ObstacleContour
+from contours.ShelfContour import ShelfContour
+from contours.BayContour import BayContour
+from contours.WallContour import WallContour
 
 FRAME_WIDTH = 820
 FRAME_HEIGHT = 616
@@ -257,7 +257,7 @@ class Vision:
 
         fps = 1.0/(time.time() - t1)         # calculate frame rate
         print("Frame Rate: ", int(fps), end="\r")
-
+        print("FUUUUUUCK " + str(rowMarkerRangeBearing))
         return itemBearing, obstaclesRangeBearing, packingBayBearing, bayMarkerRangeBearing, rowMarkerRangeBearing, shelfBearing, wallRange
         
                 

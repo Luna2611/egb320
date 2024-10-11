@@ -2,10 +2,16 @@ from __future__ import print_function
 
 import numpy as np
 import cv2
-from Vision import Vision
+import sys
+from vision import Vision
+sys.path.append('/home/group36/egb320/')
+#/home/group36/egb320/vision
+print(str(sys.path))
 
+from led import init
+init()
 from led import LED
-
+from ..mobility import DRIVE_FUNCTION
 
 ### Motor INitialisation
 
@@ -15,7 +21,7 @@ sys.path.append("../")
 
 import time
 
-from DFROBOT_MOTOR_CODE import THIS_BOARD_TYPE, DFRobot_DC_Motor_IIC as Board
+from mobility.DFROBOT_MOTOR_CODE import THIS_BOARD_TYPE, DFRobot_DC_Motor_IIC as Board
 
 if THIS_BOARD_TYPE:
   board = Board(1, 0x10)    # RaspberryPi select bus 1, set address to 0x10
@@ -67,14 +73,15 @@ if __name__ == "__main__":
 
 ###end motor initialisation
 ###constants
-duty_cycle = 60
-state = "drivingdownrow"
+duty_cycle = 80
+turning_duty_cycle = 100
+state = "lookingforpackingbay"
 if __name__ == "__main__":   
     vision = Vision()
     vision.SetupCamera()
     try:
         while(1):
-            itemsBearing, obstaclesRangeBearing, packingBayBearing, bayMarkerRangeBearing, rowMarkersRangeBearing, shelfBearing = vision.Run()
+            itemsBearing, obstaclesRangeBearing, packingBayBearing, bayMarkerRangeBearing, rowMarkersRangeBearing, shelfBearing, wallRange = vision.Run()
 
             print("\n\n")
 
@@ -100,36 +107,76 @@ if __name__ == "__main__":
             #print("cant see shit")
             seen_rowmarker = None
             board.motor_stop(board.ALL)   # stop all DC motor
-            LED("green", "off")
+            LED("all", "off")
             for rowMarker in rowMarkersRangeBearing:
                 if rowMarker:
-                    print("This is row: " + str(rowMarker[0]))
-                    print("Row Marker Range: " + str(rowMarker[1]))
-                    print("Row Marker Bearing: " + str(rowMarker[2]))
+                    # print("This is row: " + str(rowMarker[0]))
+                    # print("Row Marker Range: " + str(rowMarker[1]))
+                    # print("Row Marker Bearing: " + str(rowMarker[2]))
                     seen_rowmarker = rowMarker
-                    LED("green", "on")
+                    LED("yellow", "on")
 
             if len(shelfBearing) > 0:
-                print( "Amount of shelves: " + str(len(shelfBearing)))
+                #print( "Amount of shelves: " + str(len(shelfBearing)))
                 i = 0
                 for shelf in shelfBearing:
-                    print("Shelf Bearing: " + str(shelfBearing[i]))
+                    #print("Shelf Bearing: " + str(shelfBearing[i]))
                     i+=1
+
+            speed = board.get_encoder_speed(board.ALL)      # Use boadrd.all to get all encoders speed
+            print(speed[0], speed[1])
+            #### speed[0] is the only one that gives good values at the moment - LEFT HAND MOTOR SPEED GOOD
+
+
+
+
 
             #### BEGIN STATE MACHINE
             print(state)
-            # if(state == "lookingforpackingbay"):
-            #     #turn on spot left
-            #     print("turn on spot left")
-            #     board.motor_movement([board.M1], board.CW, 80)
-            #     board.motor_movement([board.M2], board.CW, 80)
-            #     if bayMarkerRangeBearing:
-            #         #drive straight
-            #         print("drive straight")
-            #         board.motor_movement([board.M1], board.CCW, duty_cycle)
-            #         board.motor_movement([board.M2], board.CW, duty_cycle)
-            #         if(bayMarkerRangeBearing[0] < 1000):
-            #             state == "drivingdownrow"
+            if(state == "lookingforpackingbay"):
+                # #turn on spot left
+                # print("turn on spot left")
+                # board.motor_movement([board.M1], board.CW, turning_duty_cycle)
+                # board.motor_movement([board.M2], board.CW, turning_duty_cycle)                
+                # if(packingBayBearing):
+                #     board.motor_stop(board.ALL)   # stop all DC motor
+                #     if(abs(packingBayBearing)<10):
+                #         #drive straight
+                #         print("drive straight")
+                #         board.motor_movement([board.M1], board.CCW, duty_cycle)
+                #         board.motor_movement([board.M2], board.CW, duty_cycle)
+                #     elif(packingBayBearing>0):
+                #         print("shuffle right")
+                #         LED("red", "on")
+                #         board.motor_movement([board.M1], board.CCW, turning_duty_cycle)
+                #         #board.motor_movement([board.M2], board.CW, duty_cycle)
+                #     else:
+                #         print("shuffle left")
+                #         LED("green", "on")
+                #         #board.motor_movement([board.M1], board.CCW, duty_cycle)
+                #         board.motor_movement([board.M2], board.CW, turning_duty_cycle)
+
+                    if(bayMarkerRangeBearing and bayMarkerRangeBearing[0] < 500):
+                        LED("all", "on")
+                        #state == "drivingdownrow"
+
+
+                # #turn on spot left
+                # print("turn on spot left")
+                # board.motor_movement([board.M1], board.CW, turning_duty_cycle)
+                # board.motor_movement([board.M2], board.CW, turning_duty_cycle)
+                # if bayMarkerRangeBearing:
+                #     if(bayMarkerRangeBearing[1] > -50):
+                #       #drive straight
+                #       print("drive right")
+                #       board.motor_movement([board.M1], board.CCW, turning_duty_cycle)
+                #       ####board.motor_movement([board.M2], board.CCW, turning_duty_cycle)
+                #     else:
+                #       print("drive straight")
+                #       board.motor_movement([board.M1], board.CCW, duty_cycle)
+                #       board.motor_movement([board.M2], board.CW, duty_cycle)
+
+
             if(state == "drivingdownrow"):
               if(seen_rowmarker):
                   if(abs(seen_rowmarker[2])<10):
@@ -140,16 +187,16 @@ if __name__ == "__main__":
                   elif(seen_rowmarker[2]>0):
                       print("shuffle right")
                       board.motor_movement([board.M1], board.CCW, duty_cycle)
-                      # board.motor_movement([board.M2], board.CW, duty_cycle)
+                      board.motor_movement([board.M2], board.CCW, duty_cycle/2)
                   else:
                       print("shuffle left")
-                      # board.motor_movement([board.M1], board.CCW, duty_cycle)
+                      board.motor_movement([board.M1], board.CW, duty_cycle/2)
                       board.motor_movement([board.M2], board.CW, duty_cycle)
               else:
                   #turn on spot right
                   print("turn on spot right")
-                  board.motor_movement([board.M1], board.CCW, 80)
-                  board.motor_movement([board.M2], board.CCW, 80)
+                  board.motor_movement([board.M1], board.CCW, turning_duty_cycle)
+                  board.motor_movement([board.M2], board.CCW, turning_duty_cycle)
 
             print("\n\n")
 
@@ -160,6 +207,9 @@ if __name__ == "__main__":
                 break
             
 
-    except KeyboardInterrupt as e:
-    # attempt to stop motors from running
-      board.motor_stop(board.ALL)   # stop all DC motor
+    # except KeyboardInterrupt as e:
+    #     # attempt to stop motors from running
+    finally:
+        # Cleanup GPIO setup to reset pins
+        board.motor_stop(board.ALL)   # stop all DC motor
+        # GPIO.cleanup()
