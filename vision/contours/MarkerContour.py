@@ -31,9 +31,9 @@ class MarkerContour:
             perimeter = cv2.arcLength(contour, True)
 
             # Circles
-            if perimeter > 0 and area > 10*self.scale_factor: 
+            if perimeter > 0 and area > 2*self.scale_factor: 
                 circularity = 4 * np.pi * (area / (perimeter ** 2))
-                if 0.75 < circularity < 1.3: # Circular threshold for aisle markers
+                if 0.8 < circularity < 1.0: # Circular threshold for aisle markers
                     # Fit a minimum enclosing circle
                     (x, y), radius = cv2.minEnclosingCircle(contour)
                     center = (int(x), int(y))
@@ -49,7 +49,7 @@ class MarkerContour:
                     
         if len(circles) != 0:
             # Group the circles by proximity
-            circle_groups = self.__groupCircles(circles, threshold=600*self.scale_factor) 
+            circle_groups = self.__groupCircles(circles, threshold=800*self.scale_factor) 
 
             # Label aisles based on the number of circles in each group
             for i, group in enumerate(circle_groups, start=1):

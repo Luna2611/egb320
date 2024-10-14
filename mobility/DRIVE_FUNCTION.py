@@ -22,7 +22,7 @@ sys.path.append("../")
 
 import time
 
-from DFROBOT_MOTOR_CODE import THIS_BOARD_TYPE, DFRobot_DC_Motor_IIC as Board
+from .DFROBOT_MOTOR_CODE import THIS_BOARD_TYPE, DFRobot_DC_Motor_IIC as Board
 
 #LED stuff
 import RPi.GPIO as GPIO			# Import the GPIO module

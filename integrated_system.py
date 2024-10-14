@@ -4,24 +4,21 @@ import numpy as np
 import cv2
 import sys
 from vision import Vision
-sys.path.append('/home/group36/egb320/')
-#/home/group36/egb320/vision
-print(str(sys.path))
 
-from led import init
-init()
-from led import LED
-from ..mobility import DRIVE_FUNCTION
+from nav.MILESTONE3 import LED
+
+from mobility import DRIVE_FUNCTION
+from mobility import THIS_BOARD_TYPE, DFRobot_DC_Motor_IIC as Board
 
 ### Motor INitialisation
 
-import sys
+
 import os
-sys.path.append("../")
+#sys.path.append("../")
 
 import time
 
-from mobility.DFROBOT_MOTOR_CODE import THIS_BOARD_TYPE, DFRobot_DC_Motor_IIC as Board
+
 
 if THIS_BOARD_TYPE:
   board = Board(1, 0x10)    # RaspberryPi select bus 1, set address to 0x10
@@ -47,6 +44,8 @@ def print_board_status():
     print("board status: unsupport board framware version")
 
 if __name__ == "__main__":
+
+  led = LED()
 
   board_detect()    # If you forget address you had set, use this to detected them, must have class instance
 
@@ -75,7 +74,7 @@ if __name__ == "__main__":
 ###constants
 duty_cycle = 80
 turning_duty_cycle = 100
-state = "lookingforpackingbay"
+state = "drivingdownrow"
 if __name__ == "__main__":   
     vision = Vision()
     vision.SetupCamera()
@@ -102,19 +101,19 @@ if __name__ == "__main__":
             if len(bayMarkerRangeBearing) > 0:
                 print("Packing Bay Marker Range: " + str(bayMarkerRangeBearing[0]))
                 print("Packing Bay Marker Bearing: " + str(bayMarkerRangeBearing[1]))
+                led.toggle("yellow", "on")
 
             #if len(rowMarkersRangeBearing) > 0:
             #print("cant see shit")
             seen_rowmarker = None
             board.motor_stop(board.ALL)   # stop all DC motor
-            LED("all", "off")
+            led.toggle("all", "off")
             for rowMarker in rowMarkersRangeBearing:
                 if rowMarker:
                     # print("This is row: " + str(rowMarker[0]))
                     # print("Row Marker Range: " + str(rowMarker[1]))
                     # print("Row Marker Bearing: " + str(rowMarker[2]))
                     seen_rowmarker = rowMarker
-                    LED("yellow", "on")
 
             if len(shelfBearing) > 0:
                 #print( "Amount of shelves: " + str(len(shelfBearing)))
@@ -156,9 +155,9 @@ if __name__ == "__main__":
                 #         #board.motor_movement([board.M1], board.CCW, duty_cycle)
                 #         board.motor_movement([board.M2], board.CW, turning_duty_cycle)
 
-                    if(bayMarkerRangeBearing and bayMarkerRangeBearing[0] < 500):
-                        LED("all", "on")
-                        #state == "drivingdownrow"
+                    if(bayMarkerRangeBearing and bayMarkerRangeBearing[0] < 700): # 700 is close to packing bay
+                        led.toggle("all", "on")
+                        state == "drivingdownrow"
 
 
                 # #turn on spot left
@@ -182,27 +181,28 @@ if __name__ == "__main__":
                   if(abs(seen_rowmarker[2])<10):
                       #drive straight
                       print("drive straight")
-                      board.motor_movement([board.M1], board.CCW, duty_cycle)
-                      board.motor_movement([board.M2], board.CW, duty_cycle)
+                      # board.motor_movement([board.M1], board.CCW, duty_cycle+seen_rowmarker[2])
+                      # board.motor_movement([board.M2], board.CW, duty_cycle-seen_rowmarker[2])
                   elif(seen_rowmarker[2]>0):
                       print("shuffle right")
-                      board.motor_movement([board.M1], board.CCW, duty_cycle)
-                      board.motor_movement([board.M2], board.CCW, duty_cycle/2)
+                      # board.motor_movement([board.M1], board.CCW, duty_cycle)
+                      # board.motor_movement([board.M2], board.CCW, duty_cycle/2)
                   else:
                       print("shuffle left")
-                      board.motor_movement([board.M1], board.CW, duty_cycle/2)
-                      board.motor_movement([board.M2], board.CW, duty_cycle)
+                      # board.motor_movement([board.M1], board.CW, duty_cycle/2)
+                      # board.motor_movement([board.M2], board.CW, duty_cycle)
               else:
                   #turn on spot right
                   print("turn on spot right")
-                  board.motor_movement([board.M1], board.CCW, turning_duty_cycle)
-                  board.motor_movement([board.M2], board.CCW, turning_duty_cycle)
+                  # board.motor_movement([board.M1], board.CCW, turning_duty_cycle)
+                  # board.motor_movement([board.M2], board.CCW, turning_duty_cycle)
 
             print("\n\n")
 
             k = cv2.waitKey(5) & 0xFF   # Make the program wait for 5ms before continuing (also required to display image).
             if k == 27: # Esc key
                 vision.Dispose()
+                led.Dispose
                 cv2.destroyAllWindows()
                 break
             

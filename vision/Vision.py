@@ -3,15 +3,15 @@ import picamera2
 import numpy as np
 import time
 
-from position.Distance import Distance
-from position.Bearing import Bearing
+from .position.Distance import Distance
+from .position.Bearing import Bearing
 
-from contours.MarkerContour import MarkerContour
-from contours.ItemContour import ItemContour
-from contours.ObstacleContour import ObstacleContour
-from contours.ShelfContour import ShelfContour
-from contours.BayContour import BayContour
-from contours.WallContour import WallContour
+from .contours.MarkerContour import MarkerContour
+from .contours.ItemContour import ItemContour
+from .contours.ObstacleContour import ObstacleContour
+from .contours.ShelfContour import ShelfContour
+from .contours.BayContour import BayContour
+from .contours.WallContour import WallContour
 
 FRAME_WIDTH = 820
 FRAME_HEIGHT = 616
@@ -46,7 +46,8 @@ class Vision:
         # Create a camera object
         self.cap = picamera2.Picamera2()
         self.cap.controls.ExposureTime = 5000
-        self.cap.controls.AnalogueGain = 0.8
+        self.cap.controls.AnalogueGain = 1.4
+        self.cap.controls.AeEnable = False
         
         config = self.cap.create_video_configuration(main={"format":'RGB888',"size":(FRAME_WIDTH, FRAME_HEIGHT)})
         self.cap.configure(config)
@@ -273,4 +274,3 @@ class Vision:
         hsv_frame = cv2.cvtColor(scale_down_frame, cv2.COLOR_RGB2HSV)
 
         return hsv_frame, scale_down_frame
-
