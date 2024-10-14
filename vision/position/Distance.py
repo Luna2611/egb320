@@ -1,3 +1,6 @@
+import cv2
+import numpy as np
+
 class Distance:
 
     fitted_height = 0.0
@@ -15,9 +18,9 @@ class Distance:
             focalLength : float
                 Apparent focal length of the camera in pixels.
             knownWidth : float
-                Width of the vision target in units
+                Width of the vision target in mm
             knownHeight : float
-                Height of the vision target in units
+                Height of the vision target in mm
         """
 
         self.known_width = knownWidth
@@ -44,14 +47,42 @@ class Distance:
         self.fitted_width = w
 
         # Prevent width and height in image plane from swapping by checking real width and height
-        if(self.known_height > self.known_width and self.fitted_width > self.fitted_height):
-            temp = self.fitted_width
-            self.fitted_width = self.fitted_height
-            self.fitted_height = temp
-        elif(self.known_width > self.known_height and self.fitted_height > self.fitted_width):
-                temp = self.fitted_height
-                self.fitted_height = self.fitted_width
-                self.fitted_width = temp
+        if (self.known_height > self.known_width and self.fitted_width > self.fitted_height) or \
+                (self.known_width > self.known_height and self.fitted_height > self.fitted_width):
+            self.fitted_width, self.fitted_height = self.fitted_height, self.fitted_width
 
         distance = self.__calculateDistance()
         return distance
+
+    def RectifyContour(self, image, corners):
+        """
+           Applies perspective rectification based on object's corners.
+
+           Parameters
+           ----------
+           image : np.array
+               The input image from the camera.
+           corners : list
+               List of four corner points of the marker.
+
+           Returns
+           -------
+           np.array
+               The warped image (rectified marker).
+        """
+        if len(corners) == 4:  # Ensure we have four corner points
+            src_pts = np.array(corners, dtype="float32")
+
+            # Define the destination points (a perfect top-down view)
+            dst_pts = np.array([[0, 0], [self.known_width, 0],
+                                [self.known_width, self.known_height], [0, self.known_height]], dtype="float32")
+
+            # Compute the perspective transform matrix
+            mat = cv2.getPerspectiveTransform(src_pts, dst_pts)
+
+            # Warp the image to a top-down view of the marker
+            warped = cv2.warpPerspective(image, mat, (int(self.known_width), int(self.known_height)))
+
+            return warped
+        else:
+            return None
