@@ -26,10 +26,9 @@ class ObstacleContour:
         for contour in contours:
             area = cv2.contourArea(contour)
             if (area > 700*self.scale_factor):  # Adjust this threshold based on obstacle size
-                # Draw bounding box around each detected obstacle
-                corners = self.__getCorners(contour)
+                x, y, w, h = cv2.boundingRect(contour)
                 cX, cY = self.__calculateCentroid(contour)
-                obstacles_coor.append([ corners, [cX, cY] ])
+                obstacles_coor.append( [ [x, y] , [w, h], [cX, cY] ] )
 
         return contours, obstacles_coor
 

@@ -2,24 +2,25 @@ import cv2
 import picamera2
 import numpy as np
 import time
+import math
 
-from .position.Distance import Distance
-from .position.Bearing import Bearing
+from position.Distance import Distance
+from position.Bearing import Bearing
 
-from .contours.MarkerContour import MarkerContour
-from .contours.ItemContour import ItemContour
-from .contours.ObstacleContour import ObstacleContour
-from .contours.ShelfContour import ShelfContour
-from .contours.BayContour import BayContour
-from .contours.WallContour import WallContour
+from contours.MarkerContour import MarkerContour
+from contours.ItemContour import ItemContour
+from contours.ObstacleContour import ObstacleContour
+from contours.ShelfContour import ShelfContour
+from contours.BayContour import BayContour
+from contours.WallContour import WallContour
 
 FRAME_WIDTH = 820
 FRAME_HEIGHT = 616
-SCALE_FACTOR = 0.2
+SCALE_FACTOR = 0.25
 # 320, 240
 # 640, 480
 
-FOCAL_LENGTH = 69  # px
+FOCAL_LENGTH = 70 # px
 # 636
 
 HORIZONTAL_FOV = 51.5  # deg
@@ -40,7 +41,7 @@ class Vision:
     font = cv2.FONT_HERSHEY_SIMPLEX
     font_color = (0, 0, 0)
     contour_thickness = 2
-    centroid_radius = 5
+    centroid_radius = 3
 
     # Contour color in BGR
     bay_color = (255, 149, 69)  # blue-ish
@@ -59,9 +60,8 @@ class Vision:
     def SetupCamera(self):
         # Create a camera object
         self.cap = picamera2.Picamera2()
-        self.cap.controls.ExposureTime = 5000
-        self.cap.controls.AnalogueGain = 1.4
-        self.cap.controls.AeEnable = False
+        self.cap.controls.ExposureTime = 7000
+        self.cap.controls.AnalogueGain = 1.1
         
         config = self.cap.create_video_configuration(main={"format":'RGB888',"size":(FRAME_WIDTH, FRAME_HEIGHT)})
         self.cap.configure(config)
@@ -143,9 +143,9 @@ class Vision:
                                  self.centroid_radius, self.row_marker_color, self.centroid_radius)
 
                 # Distance
-                row_marker_d = round(marker_d.GetDistance(row_markers[1], row_markers[1]), 2)
-                '''if row_marker_d > 900:
-                    row_marker_d -= row_marker_d * 0.23'''
+                row_marker_d = marker_d.GetDistance(row_markers[1], row_markers[1])
+                """if row_marker_d > 900:
+                    row_marker_d -= row_marker_d * 0.23"""
                 img = cv2.putText(img, str(row_marker_d),
                                   (row_markers[2], row_markers[3] - 20),
                                   self.font, self.font_scale, self.font_color)
@@ -158,36 +158,30 @@ class Vision:
 
         elif len(bay_marker) > 0 and packingBayBearing is not None:
             bay_marker_corners = bay_marker[0]
-            bay_marker_centroid = bay_marker[1]
+            bay_marker_dim = bay_marker[1]
+            bay_marker_centroid = bay_marker[2]
 
-            if bay_marker_corners and len(bay_marker_corners) == 4:
-                # Perform rectification using the corners
-                rectified_marker = marker_d.RectifyContour(img, bay_marker_corners)
+            if len(bay_marker_corners) == 2 and len(bay_marker_dim) == 2 and len(bay_marker_centroid) == 2: 
+                # Contour
+                img = cv2.rectangle(img, (bay_marker_corners[0], bay_marker_corners[1]),
+                                    (bay_marker_corners[0] + bay_marker_dim[0], bay_marker_corners[1] + bay_marker_dim[1]),
+                                    self.bay_marker_color, self.contour_thickness)
 
-                if rectified_marker is not None:
-                    # Measure the bounding box of the rectified marker
-                    rectified_h, rectified_w = rectified_marker.shape[:2]
+                # Bearing
+                bay_marker_bearing = round(self.object_b.GetBearing(bay_marker_centroid[0]), 1)
+                img = cv2.putText(img, str(bay_marker_bearing),
+                                    (bay_marker_centroid[0], bay_marker_centroid[1]),
+                                    self.font, self.font_scale, self.font_color)
+                img = cv2.circle(img, (bay_marker_centroid[0], bay_marker_centroid[1]), 
+                                    self.centroid_radius, self.bay_marker_color, self.centroid_radius)
 
-                    # Contour
-                    # Ensure the corners array is in the right shape (required by cv2.polylines)
-                    corners = np.int32([bay_marker_corners])  # Reshape to be (1, 4, 2)
-                    # Draw the polygon (closed=True ensures the shape is closed)
-                    img = cv2.polylines(img, corners, isClosed=True, color=self.bay_marker_color,
-                                        thickness=self.contour_thickness)
-
-                    # Bearing
-                    bay_marker_bearing = round(self.object_b.GetBearing(bay_marker_centroid[0]), 1)
-                    img = cv2.putText(img, str(bay_marker_bearing),
-                                      (bay_marker_centroid[0], bay_marker_centroid[1]),
-                                      self.font, self.font_scale, self.font_color)
-                    img = cv2.circle(img, (bay_marker_centroid[0], bay_marker_centroid[1]), 5, (0, 255, 0), 5)
-
-                    # Distance
-                    bay_marker_d = round(marker_d.GetDistance(rectified_w, rectified_h), 2)
-                    img = cv2.putText(img, str(bay_marker_d),
-                                      (bay_marker_centroid[0], bay_marker_centroid[1] - 20),
-                                      self.font, self.font_scale, self.font_color)
-                    bayMarkerRangeBearing = [bay_marker_d, bay_marker_bearing]
+                # Distance
+                scale = bay_marker_dim[0]/bay_marker_dim[1]
+                bay_marker_d = marker_d.GetDistance(bay_marker_dim[0], bay_marker_dim[1], scale)*2
+                img = cv2.putText(img, str(bay_marker_d),
+                                    (bay_marker_centroid[0], bay_marker_centroid[1] - 20),
+                                    self.font, self.font_scale, self.font_color)
+                bayMarkerRangeBearing = [bay_marker_d, bay_marker_bearing]
 
         # Obstacle ------------------------------------------------------------------------------------------------
         # Create an obstacle detection object
@@ -197,34 +191,31 @@ class Vision:
 
         for obstacle in obstacles:
             obstacle_corners = obstacle[0]
-            obstacle_centroid = obstacle[1]
+            obstacle_dim = obstacle[1]
+            obstacle_centroid = obstacle[2]
 
-            if len(obstacle_corners) == 4 and len(obstacle_centroid) == 2:
-                # Perform perspective rectification using the obstacle corners
-                rectified_obstacle = obstacle_d.RectifyContour(img, obstacle_corners)
+            if len(obstacle_corners) == 2 and len(obstacle_centroid) == 2 and len(obstacle_dim) == 2:
+                # Contour
+                img = cv2.rectangle(img, (obstacle_corners[0], obstacle_corners[1]),
+                                    (obstacle_corners[0] + obstacle_dim[0], obstacle_corners[1] + obstacle_dim[1]),
+                                    self.obstacle_color, self.contour_thickness)
 
-                if rectified_obstacle is not None:
-                    rectified_h, rectified_w = rectified_obstacle.shape[:2]
+                # Bearing
+                obstacle_bearing = round(self.object_b.GetBearing(obstacle_centroid[0]), 1)
+                img = cv2.putText(img, str(obstacle_bearing),
+                                    (obstacle_centroid[0], obstacle_centroid[1] + 20),
+                                    self.font, self.font_scale, self.font_color)
+                img = cv2.circle(img, (obstacle_centroid[0], obstacle_centroid[1]), 
+                                    self.centroid_radius, self.obstacle_color, self.centroid_radius)
 
-                    # Contour
-                    corners = np.int32([obstacle_corners])  # Reshape to be (1, 4, 2)
-                    img = cv2.polylines(img, corners, isClosed=True, color=self.obstacle_color,
-                                        thickness=self.contour_thickness)
-                    # Bearing
-                    obstacle_bearing = round(self.object_b.GetBearing(obstacle_centroid[0]), 1)
-                    img = cv2.putText(img, str(obstacle_bearing),
-                                      (obstacle_centroid[0], obstacle_centroid[1]),
-                                      self.font, self.font_scale, self.font_color)
-                    img = cv2.circle(img, (obstacle_centroid[0], obstacle_centroid[1]),
-                                     self.centroid_radius, self.obstacle_color, self.centroid_radius)
+                # Distance
+                scale = 1 #obstacle_dim[0]/obstacle_dim[1]
+                obstacle_distance = obstacle_d.GetDistance(obstacle_dim[0], obstacle_dim[1], scale)
+                img = cv2.putText(img, str(obstacle_d),
+                                    (obstacle_centroid[0], obstacle_centroid[1] - 20),
+                                    self.font, self.font_scale, self.font_color)
 
-                    # Distance
-                    obstacle_distance = round(obstacle_d.GetDistance(rectified_w, rectified_h), 2)
-                    # obstacle_distance += obstacle_distance * 0.75
-                    img = cv2.putText(img, str(obstacle_distance),
-                                      (obstacle_centroid[0], obstacle_centroid[1] - 20),
-                                      self.font, self.font_scale, self.font_color)
-                    obstaclesRangeBearing.append([obstacle_distance, obstacle_bearing])
+                obstaclesRangeBearing.append([obstacle_distance, obstacle_bearing])
 
         # Shelves --------------------------------------------------------------------------------------------------
         # Create an shelf detection object
@@ -280,7 +271,6 @@ class Vision:
 
         fps = 1.0 / (time.time() - t1)  # calculate frame rate
         print("Frame Rate: ", int(fps), end="\r")
-        print("FUUUUUUCK " + str(rowMarkerRangeBearing))
         return itemBearing, obstaclesRangeBearing, packingBayBearing, bayMarkerRangeBearing, rowMarkerRangeBearing, shelfBearing, wallRange
 
     def Dispose(self):

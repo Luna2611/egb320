@@ -5,33 +5,13 @@ import numpy as np
 FRAME_WIDTH = 820
 FRAME_HEIGHT = 616
 
-class Vision:
-    
-    # Row marker measurements
-    marker_radius = 70 #mm
+def nothing():
+    pass
 
-    # Rubic measurements
-    #known_width = 38 #mm
-    #known_height = 38 #mm
-
-    # Obstacle measurements
-    obstacle_width = 50 #mm
-    obstacle_height = 150 #mm    
-
-    cap = None
-
-    def SetupCamera(self):
-        # Create a camera object
-        self.cap = picamera2.Picamera2()
-        self.cap.set_controls({"AeEnable": False})  # Disable Auto Exposure
-        self.cap.set_controls({"ExposureTime": 5000, "AnalogueGain": 0.8})  # Set manual values
-        self.cap.set_controls({"FrameDurationLimits": (10000, 15000)})  # Set min to 10ms and max to 15 ms for a fixed frame rate
-        
-        config = self.cap.create_video_configuration(main={"format":'RGB888',"size":(FRAME_WIDTH, FRAME_HEIGHT)})
-        self.cap.configure(config)
-
-        #start the camera
-        self.cap.start()
+# Create a camera object
+cap = picamera2.Picamera2()
+cap.set_controls({"ExposureTime": 7000, "AnalogueGain": 1.1})  # Set manual values
+cap.set_controls({"FrameDurationLimits": (10000, 15000)})  # Set min to 10ms and max to 15 ms for a fixed frame rate
 
 #print the different camera resolutions/modes 
 #the sensor can be configured for

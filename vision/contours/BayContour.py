@@ -3,8 +3,8 @@ import numpy as np
 
 class BayContour:
 
-    lower_bound = np.array([86, 50, 0])
-    upper_bound = np.array([97, 191, 237])
+    lower_bound = np.array([92, 102, 225])
+    upper_bound = np.array([96, 166, 255])
 
     mask = None 
     scale_factor = 0   

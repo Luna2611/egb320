@@ -28,16 +28,16 @@ class Distance:
         self.focal_length = focalLength
     
     # returns distance from camera largest contour
-    def __calculateDistance(self):
+    def __calculateDistance(self, scale):
         if(self.known_width > 0):
-            return round((self.known_width * self.focal_length) / self.fitted_width, 2)
+            return round(scale*(self.known_width * self.focal_length) / self.fitted_width, 2)
         else:
             return 0
     
     def getFittedBox(self):
         return self.fitted_height, self.fitted_width
     
-    def GetDistance(self, w, h):
+    def GetDistance(self, w, h, scale=1):
         '''Returns two frames tracking a vision target of HSV values.
            Updates variables related to vision target tracking'''
         if w <= 0 or h <= 0:
@@ -51,7 +51,7 @@ class Distance:
                 (self.known_width > self.known_height and self.fitted_height > self.fitted_width):
             self.fitted_width, self.fitted_height = self.fitted_height, self.fitted_width
 
-        distance = self.__calculateDistance()
+        distance = self.__calculateDistance(scale)
         return distance
 
     def RectifyContour(self, image, corners):
@@ -78,10 +78,12 @@ class Distance:
                                 [self.known_width, self.known_height], [0, self.known_height]], dtype="float32")
 
             # Compute the perspective transform matrix
-            mat = cv2.getPerspectiveTransform(src_pts, dst_pts)
+            mat = cv2.getPerspectiveTransform(src_pts, dst_pts)            
 
             # Warp the image to a top-down view of the marker
             warped = cv2.warpPerspective(image, mat, (int(self.known_width), int(self.known_height)))
+
+            print("Bay marker: ", warped)
 
             return warped
         else:

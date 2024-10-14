@@ -5,7 +5,7 @@ from scipy.spatial import distance
 class MarkerContour:
 
     lower_bound = np.array([0, 0, 0])
-    upper_bound = np.array([179, 255, 75])
+    upper_bound = np.array([179, 79, 66])
 
     mask = None
     scale_factor = 0
@@ -16,7 +16,8 @@ class MarkerContour:
     def GetContour(self, hsv_frame):
         # Apply Gaussian blur and morphological operations
         blurred_frame = cv2.GaussianBlur(hsv_frame, (5, 5), 0) 
-        self.mask = cv2.inRange(blurred_frame, self.lower_bound, self.upper_bound)           
+        self.mask = cv2.inRange(blurred_frame, self.lower_bound, self.upper_bound)
+        cv2.imshow("Marker", self.mask)           
 
         # Filter mask and find contours
         contours = self.__processMask()
@@ -31,10 +32,10 @@ class MarkerContour:
             perimeter = cv2.arcLength(contour, True)
 
             # Circles
-            if perimeter > 0 and area > 2*self.scale_factor: 
+            if perimeter > 0 and area > 0.2*self.scale_factor: 
                 circularity = 4 * np.pi * (area / (perimeter ** 2))
                 
-                if 0.8 < circularity < 1.0: # Circular threshold for aisle markers
+                if 0.8 < circularity < 1: # Circular threshold for aisle markers
                     # Fit a minimum enclosing circle
                     (x, y), radius = cv2.minEnclosingCircle(contour)
                     center = (int(x), int(y))
@@ -43,7 +44,7 @@ class MarkerContour:
                     
         if len(circles) != 0:
             # Group the circles by proximity
-            circle_groups = self.__groupCircles(circles, threshold=800*self.scale_factor) 
+            circle_groups = self.__groupCircles(circles, threshold=1000*self.scale_factor) 
 
             # Label aisles based on the number of circles in each group
             for i, group in enumerate(circle_groups, start=1):
@@ -65,8 +66,9 @@ class MarkerContour:
         # Detect squares
         if contours:
             bay_marker_contour = max(contours, key=cv2.contourArea)
-            bay_marker.append(self.__getCorners(bay_marker_contour))
-            bay_marker.append(self.__calculateCentroid(bay_marker_contour))
+            x, y, w, h = cv2.boundingRect(bay_marker_contour)
+            cX, cY = self.__calculateCentroid(bay_marker_contour)
+            bay_marker = [ [x, y] , [w, h], [cX, cY] ]
 
         return circles, bay_marker, row_marker
 
