@@ -8,10 +8,9 @@ from vision import Vision
 # from item_collection import shelfHeight
 
 
-
-from grab_old import grab  # Import the grab module
-
-
+# Item management
+from Grabber import Grabber  # Import the grab module
+from Lifter import Lifter 
 
 # Set up the GPIO and PWM
 # pwm = Grab.setup_gpio()
@@ -27,7 +26,6 @@ from grab_old import grab  # Import the grab module
 
 
 # # main.py
-# from lift import shelfHeight
 
 # # Call the shelfHeight function to move to the desired shelf
 # # shelfHeight(0)  # Move to bottom shelf
@@ -112,12 +110,13 @@ duty_cycle = 90
 turning_duty_cycle = 100
 state = "drivingdownrow"
 if __name__ == "__main__":   
-    grabber = grab()
+    grabber = Grabber()
+    lifter = Lifter()
     vision = Vision()
     vision.SetupCamera()
     try:
         while(1):
-            # shelfHeight(2)
+            lifter.set_height(2)
             itemsBearing, obstaclesRangeBearing, packingBayBearing, bayMarkerRangeBearing, rowMarkersRangeBearing, shelfBearing, wallRange = vision.Run()
 
             print("\n\n")
@@ -171,11 +170,12 @@ if __name__ == "__main__":
             #### BEGIN STATE MACHINE
             print(state)
             if(state == "parked"):
-                # grabber.Grab(2)
+                # grabber.Grab(0)
                 # time.sleep(1)
                 # grabber.Grab(1)
+                # time.sleep(2)
                 time.sleep(0.1)
-            elif(state == "turningtoshelf"):
+            elif(state == "openloopturningtoshelf"):
                 # print("GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG")
                 # grab(1)
                 # time.sleep(10)
@@ -183,74 +183,29 @@ if __name__ == "__main__":
 
 
                 # print(str(wallRange))
-                time.sleep(1)
-                board.motor_movement([board.M1], board.CCW, 100)
-                board.motor_movement([board.M2], board.CCW, 100)
-                time.sleep(0.8)
-                board.motor_movement([board.M1], board.CCW, duty_cycle)
-                board.motor_movement([board.M2], board.CW, duty_cycle)
-                time.sleep(0.3)
-                board.motor_stop(board.ALL)   # stop all DC motor
-                grabber.Grab(1)
-                time.sleep(2)
-                board.motor_movement([board.M1], board.CW, duty_cycle)
-                board.motor_movement([board.M2], board.CCW, duty_cycle)
-                time.sleep(0.3)
+                # time.sleep(1)
                 board.motor_movement([board.M1], board.CW, 100)
                 board.motor_movement([board.M2], board.CW, 100)
                 time.sleep(0.8)
-                board.motor_movement([board.M1], board.CW, 100)
-                board.motor_movement([board.M2], board.CCW, 100)
-                time.sleep(0.5)
                 board.motor_stop(board.ALL)   # stop all DC motor
-                state = "parked"
-                # time.sleep(100)
 
-                # #turn on spot left
-                # print("turn on spot left")
-                # board.motor_movement([board.M1], board.CW, turning_duty_cycle)
-                # board.motor_movement([board.M2], board.CW, turning_duty_cycle)                
-                # if(packingBayBearing):
-                #     board.motor_stop(board.ALL)   # stop all DC motor
-                #     if(abs(packingBayBearing)<10):
-                #         #drive straight
-                #         print("drive straight")
-                #         board.motor_movement([board.M1], board.CCW, duty_cycle)
-                #         board.motor_movement([board.M2], board.CW, duty_cycle)
-                #     elif(packingBayBearing>0):
-                #         print("shuffle right")
-                #         LED("red", "on")
-                #         board.motor_movement([board.M1], board.CCW, turning_duty_cycle)
-                #         #board.motor_movement([board.M2], board.CW, duty_cycle)
-                #     else:
-                #         print("shuffle left")
-                #         LED("green", "on")
-                #         #board.motor_movement([board.M1], board.CCW, duty_cycle)
-                #         board.motor_movement([board.M2], board.CW, turning_duty_cycle)
-
-                if(bayMarkerRangeBearing):# and bayMarkerRangeBearing[0] < 900): # 700 is close to packing bay
-                    # led.toggle("all", "on")
-                    # state == "drivingdownrow"
-                    print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+                state = "turntowardsitem"
 
 
-                # #turn on spot left
-                # print("turn on spot left")
-                # board.motor_movement([board.M1], board.CW, turning_duty_cycle)
-                # board.motor_movement([board.M2], board.CW, turning_duty_cycle)
-                # if bayMarkerRangeBearing:
-                #     if(bayMarkerRangeBearing[1] > -50):
-                #       #drive straight
-                #       print("drive right")
-                #       board.motor_movement([board.M1], board.CCW, turning_duty_cycle)
-                #       ####board.motor_movement([board.M2], board.CCW, turning_duty_cycle)
-                #     else:
-                #       print("drive straight")
-                #       board.motor_movement([board.M1], board.CCW, duty_cycle)
-                #       board.motor_movement([board.M2], board.CW, duty_cycle)
 
-
-            if(state == "drivingdownrow"):
+            elif(state == "turntowardsitem"):
+              if(itemsBearing):
+                  # desired_angle = itemsBearing[0]
+                  if(itemsBearing[0]>0):
+                    board.motor_movement([board.M1], board.CW, 100)
+                    board.motor_movement([board.M2], board.CW, 100)
+                  else:
+                    board.motor_movement([board.M1], board.CCW, 100)
+                    board.motor_movement([board.M2], board.CCW, 100)
+              else:
+                  board.motor_movement([board.M1], board.CW, 100)
+                  board.motor_movement([board.M2], board.CW, 100)
+            elif(state == "drivingdownrow"):
                 print(len(shelfBearing))
                 if(seen_rowmarker and seen_rowmarker[1] < 1800):
 
@@ -284,8 +239,30 @@ if __name__ == "__main__":
                         print("shuffle left")
                         board.motor_movement([board.M1], board.CW, duty_cycle/2)
                         board.motor_movement([board.M2], board.CW, duty_cycle)
-
-                
+            elif(state == "liningupwithrow"):
+                #turn on spot left
+                print("turn on spot left")
+                board.motor_movement([board.M1], board.CW, turning_duty_cycle)
+                board.motor_movement([board.M2], board.CW, turning_duty_cycle)                
+                if(packingBayBearing):
+                    if(packingBayBearing < 1500):
+                      state = "drivingdownrow"
+                    board.motor_stop(board.ALL)   # stop all DC motor
+                    if(abs(packingBayBearing)<10):
+                        #drive straight
+                        print("drive straight")
+                        board.motor_movement([board.M1], board.CCW, duty_cycle)
+                        board.motor_movement([board.M2], board.CW, duty_cycle)
+                    elif(packingBayBearing>0):
+                        print("shuffle right")
+                        LED("red", "on")
+                        board.motor_movement([board.M1], board.CCW, turning_duty_cycle)
+                        #board.motor_movement([board.M2], board.CW, duty_cycle)
+                    else:
+                        print("shuffle left")
+                        LED("green", "on")
+                        #board.motor_movement([board.M1], board.CCW, duty_cycle)
+                        board.motor_movement([board.M2], board.CW, turning_duty_cycle)                
 
             print("\n\n")
 

@@ -34,17 +34,21 @@ class WallContour:
 
         for contour in contours:
             area = cv2.contourArea(contour)
-            wall_area += area
-
-        if (wall_area > 40000*self.scale_factor):
-            range = "near"
-        elif (wall_area > 0): 
-            range = "far"
+            wall_area += area       
         
         if lines is not None:
             for line in lines:
                 x1, y1, x2, y2 = line[0]
                 wall_edges.append( [ [x1, y1], [x2, y2] ] ) 
+            if (wall_area > 15000):
+                range = "near"
+            elif (wall_area > 0): 
+                range = "far"
+        else:
+            if (wall_area > 19000):
+                range = "near"
+            elif (wall_area > 0): 
+                range = "far"
                                     
         return wall_edges, range
     

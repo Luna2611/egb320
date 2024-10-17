@@ -1,6 +1,6 @@
 import numpy as np
 import cv2
-from Vision import Vision
+from vision import Vision
 
     
 if __name__ == "__main__":   

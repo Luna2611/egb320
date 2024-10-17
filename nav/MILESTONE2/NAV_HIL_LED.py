@@ -32,10 +32,15 @@ for row in csv_list[1:]:
 # sceneParameters.bayContents[5,0,1] = warehouseObjects.cereal
 
 
-sceneParameters.obstacle0_StartingPosition = -1 #[-0.5,0]  # starting position of obstacle 0 [x, y] (in metres), -1 if want to use current CoppeliaSim position, or none if not wanted in the scene
+sceneParameters.obstacle0_StartingPosition = [0.2, -0.1]  # starting position of obstacle 0 [x, y] (in metres), -1 if want to use current CoppeliaSim position, or none if not wanted in the scene
 # sceneParameters.obstacle0_StartingPosition = None  # starting position of obstacle 0 [x, y] (in metres), -1 if want to use current CoppeliaSim position, or none if not wanted in the scene
-sceneParameters.obstacle1_StartingPosition = -1   # starting position of obstacle 1 [x, y] (in metres), -1 if want to use current CoppeliaSim position, or none if not wanted in the scene
-sceneParameters.obstacle2_StartingPosition = -1   # starting position of obstacle 2 [x, y] (in metres), -1 if want to use current CoppeliaSim position, or none if not wanted in the scene
+sceneParameters.obstacle1_StartingPosition = [0.8, -0.75]   # starting position of obstacle 1 [x, y] (in metres), -1 if want to use current CoppeliaSim position, or none if not wanted in the scene
+sceneParameters.obstacle2_StartingPosition = [0.25, 0.75]   #
+
+# sceneParameters.obstacle0_StartingPosition = -1 #[-0.5,0]  # starting position of obstacle 0 [x, y] (in metres), -1 if want to use current CoppeliaSim position, or none if not wanted in the scene
+# # sceneParameters.obstacle0_StartingPosition = None  # starting position of obstacle 0 [x, y] (in metres), -1 if want to use current CoppeliaSim position, or none if not wanted in the scene
+# sceneParameters.obstacle1_StartingPosition = -1   # starting position of obstacle 1 [x, y] (in metres), -1 if want to use current CoppeliaSim position, or none if not wanted in the scene
+# sceneParameters.obstacle2_StartingPosition = -1   # starting position of obstacle 2 [x, y] (in metres), -1 if want to use current CoppeliaSim position, or none if not wanted in the scene
 
 
 # SET ROBOT PARAMETERS
@@ -283,7 +288,7 @@ if __name__ == '__main__':
 
 
         # Create CoppeliaSim PackerBot object - this will attempt to open a connection to CoppeliaSim. Make sure CoppeliaSim is running.
-        warehouseBotSim = COPPELIA_WarehouseRobot('10.88.46.34', robotParameters, sceneParameters)
+        warehouseBotSim = COPPELIA_WarehouseRobot('10.88.31.252', robotParameters, sceneParameters) #10.88.31.252 #10.88.46.34
         warehouseBotSim.StartSimulator()
 
         LED("red", "on")

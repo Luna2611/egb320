@@ -4,15 +4,15 @@ import numpy as np
 import time
 import math
 
-from position.Distance import Distance
-from position.Bearing import Bearing
+from .position.Distance import Distance
+from .position.Bearing import Bearing
 
-from contours.MarkerContour import MarkerContour
-from contours.ItemContour import ItemContour
-from contours.ObstacleContour import ObstacleContour
-from contours.ShelfContour import ShelfContour
-from contours.BayContour import BayContour
-from contours.WallContour import WallContour
+from .contours.MarkerContour import MarkerContour
+from .contours.ItemContour import ItemContour
+from .contours.ObstacleContour import ObstacleContour
+from .contours.ShelfContour import ShelfContour
+from .contours.BayContour import BayContour
+from .contours.WallContour import WallContour
 
 FRAME_WIDTH = 820
 FRAME_HEIGHT = 616
@@ -52,7 +52,15 @@ class Vision:
     wall_color = (213, 32, 255)  # pink
     item_color = (32, 255, 140)  # green
 
-
+    # For EMA
+    bay_marker_alpha = 0.2
+    row_marker_alpha = 0.2
+    timeout = 1500
+    # EMA for marker distance
+    prev_row_marker_d = None
+    last_detected_t_row = None
+    prev_bay_marker_d = None
+    last_detected_t_bay = None
 
     def __init__(self):
         self.object_b = Bearing(FRAME_WIDTH * SCALE_FACTOR, HORIZONTAL_FOV, FOCAL_LENGTH)
@@ -80,7 +88,7 @@ class Vision:
         bayMarkerRangeBearing = []
         wallRange = 0
 
-        t1 = time.time()  # for measuring fps
+        current_time = time.time()  # for measuring fps
 
         flipped_rgb_frame = self.cap.capture_array()  # capture a single image frame
         hsv_frame, rgb_frame = self.__frameConfig(flipped_rgb_frame)
@@ -143,18 +151,21 @@ class Vision:
                                  self.centroid_radius, self.row_marker_color, self.centroid_radius)
 
                 # Distance
-                row_marker_d = marker_d.GetDistance(row_markers[1], row_markers[1])
-                """if row_marker_d > 900:
-                    row_marker_d -= row_marker_d * 0.23"""
-                img = cv2.putText(img, str(row_marker_d),
+                self.last_detected_t_row = current_time  # Record the last time row marker is dectected 
+                if self.prev_row_marker_d is None:
+                    self.prev_row_marker_d = marker_d.GetDistance(row_markers[1], row_markers[1])
+                else: 
+                    new_row_marker_d = marker_d.GetDistance(row_markers[1], row_markers[1])
+                    self.prev_row_marker_d = self.__update_ema(self.prev_row_marker_d, new_row_marker_d, self.row_marker_alpha)
+                img = cv2.putText(img, str(self.prev_row_marker_d),  # Annotate distance
                                   (row_markers[2], row_markers[3] - 20),
                                   self.font, self.font_scale, self.font_color)
-                img = cv2.putText(img, str(row_markers[0] + 1),
+                img = cv2.putText(img, str(row_markers[0] + 1),  # Annotate aisle order
                                   (row_markers[2], row_markers[3] + 20),
                                   self.font, self.font_scale, self.font_color)
 
                 index = row_markers[0]
-                rowMarkerRangeBearing[index] = [row_markers[0] + 1, row_marker_d, row_marker_bearing]
+                rowMarkerRangeBearing[index] = [row_markers[0] + 1, round(self.prev_row_marker_d), row_marker_bearing]            
 
         elif len(bay_marker) > 0 and packingBayBearing is not None:
             bay_marker_corners = bay_marker[0]
@@ -176,12 +187,28 @@ class Vision:
                                     self.centroid_radius, self.bay_marker_color, self.centroid_radius)
 
                 # Distance
-                scale = bay_marker_dim[0]/bay_marker_dim[1]
-                bay_marker_d = marker_d.GetDistance(bay_marker_dim[0], bay_marker_dim[1], scale)*2
-                img = cv2.putText(img, str(bay_marker_d),
+                # Consider the distortion of the square in distance calculation
+                scale = bay_marker_dim[0]/bay_marker_dim[1] 
+                self.last_detected_t_bay = current_time  # Record the last time bay marker is dectected 
+                if self.prev_bay_marker_d is None: 
+                    self.prev_bay_marker_d = marker_d.GetDistance(bay_marker_dim[0], bay_marker_dim[1], scale)*2
+                else:
+                    new_bay_marker_d = marker_d.GetDistance(bay_marker_dim[0], bay_marker_dim[1], scale)*2
+                    self.prev_bay_marker_d = self.__update_ema(self.prev_bay_marker_d, new_bay_marker_d, self.bay_marker_alpha)
+                img = cv2.putText(img, str(self.prev_bay_marker_d),
                                     (bay_marker_centroid[0], bay_marker_centroid[1] - 20),
                                     self.font, self.font_scale, self.font_color)
-                bayMarkerRangeBearing = [bay_marker_d, bay_marker_bearing]
+                bayMarkerRangeBearing = [round(self.prev_bay_marker_d), bay_marker_bearing]
+            
+        else: 
+            # Bay marker has been out of frame for too long, reset the EMA
+            if self.prev_bay_marker_d is not None and self.last_detected_t_bay is not None:
+                if (current_time - self.last_detected_t_bay > self.timeout):                
+                    self.prev_bay_marker_d = None
+            if self.prev_row_marker_d is not None and self.last_detected_t_row is not None:
+                # Row marker has been out of frame for too long, reset the EMA
+                if self.prev_row_marker_d is not None and (current_time - self.last_detected_t_row > self.timeout):                
+                    self.prev_row_marker_d = None
 
         # Obstacle ------------------------------------------------------------------------------------------------
         # Create an obstacle detection object
@@ -269,7 +296,7 @@ class Vision:
         # Show output frame
         cv2.imshow("Camera", img)
 
-        fps = 1.0 / (time.time() - t1)  # calculate frame rate
+        fps = 1.0 / (time.time() - current_time)  # calculate frame rate
         print("Frame Rate: ", int(fps), end="\r")
         return itemBearing, obstaclesRangeBearing, packingBayBearing, bayMarkerRangeBearing, rowMarkerRangeBearing, shelfBearing, wallRange
 
@@ -285,3 +312,7 @@ class Vision:
         hsv_frame = cv2.cvtColor(scale_down_frame, cv2.COLOR_RGB2HSV)
 
         return hsv_frame, scale_down_frame
+
+    # Function to calculate EMA
+    def __update_ema(self, previous_ema, new_distance, alpha):
+        return alpha * new_distance + (1 - alpha) * previous_ema
