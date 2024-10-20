@@ -272,6 +272,7 @@ class Vision:
             # Create an items detection object
             items_c = ItemContour(SCALE_FACTOR)
             item_contours, items = items_c.GetContour(hsv_frame)
+            unsortedItemBearing = []
 
             for item in items:
                 item_corner = item[0]
@@ -290,7 +291,13 @@ class Vision:
                                       (item_centroid[0], item_centroid[1]),
                                       self.font, self.font_scale, self.font_color)
                     img = cv2.circle(img, (item_centroid[0], item_centroid[1]), 5, (0, 255, 0), 5)
-                    itemBearing.append(item_bearing)
+                    itemBearing.append(  item_bearing )
+
+            '''if len(unsortedItemBearing) > 0:
+                # Sorting based on y_centroid (first element in each pair)
+                itemBearing = sorted(unsortedItemBearing, key=lambda x: x[0])
+                for item in itemBearing:
+                    print("Item: ", item)'''
 
         # Display ------------------------------------------------------------------------------------------------
         # Show output frame

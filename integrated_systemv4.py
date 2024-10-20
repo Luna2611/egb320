@@ -1,44 +1,39 @@
 from __future__ import print_function
 
+import sys
+import csv
+
+with open("Order_1.csv", mode="r", encoding='utf-8-sig') as csv_file:
+    csv_reader = csv.reader(csv_file)
+    csv_array = list(csv_reader) #gets around strange csv reader object behaviour
+
+# csv_array = []
+# for row in csv_string_array:
+#     int_row = []
+#     for element in row:
+#         int_row.append(int(element))  # Convert string to integer
+#     csv_array.append(int_row)
+
+# print(csv_array)
+
+item_index = 1
+
+print(csv_array[item_index][2])#[item_index])
+
+#sys.exit("Stopping the script here")
+
 import numpy as np
 import cv2
-import sys
 from vision import Vision
 # from item_collection import grab
 # from item_collection import shelfHeight
+# from led_test import LED
 
 
 # Item management
 from Grabber import Grabber  # Import the grab module
 
 from Lifter import Lifter 
-
-# Set up the GPIO and PWM
-# pwm = Grab.setup_gpio()
-
-# Perform a grab action (choice = 1 for grabbing, 2 for releasing)
-# grab.grab(pwm, 1)  # Example grab
-
-# # Perform a release action
-# grab.grab(pwm, 2)  # Example release
-
-# # Clean up GPIO when done
-# grab.cleanup_gpio(pwm)
-
-
-# # main.py
-
-# # Call the shelfHeight function to move to the desired shelf
-# # shelfHeight(0)  # Move to bottom shelf
-# # shelfHeight(1)  # Move to middle shelf
-# shelfHeight(1)  # Move to top shelf
-# shelfHeight(2)
-# shelfHeight(2)
-# shelfHeight(2)
-# shelfHeight(2)
-# shelfHeight(2)
-# shelfHeight(2)
-
 
 from nav.MILESTONE3 import LED
 
@@ -107,36 +102,36 @@ if __name__ == "__main__":
 
 ###end motor initialisation
 ###constants
-duty_cycle = 80
-turning_duty_cycle = 100
+duty_cycle = 65
+turning_duty_cycle = 90
 slow_turn_speed = 70
-state = "openloopturningtoshelf"
+state = "drivingdownrow" # liningupwithrow
 if __name__ == "__main__":   
     grabber = Grabber()
     lifter = Lifter()
     vision = Vision()
     vision.SetupCamera()
-    lifter.set_height(1)
+    lifter.set_height(0)
     try:
         while(1):
-            lifter.set_height(0)
+            #lifter.set_height(0)
             itemsBearing, obstaclesRangeBearing, packingBayBearing, bayMarkerRangeBearing, rowMarkersRangeBearing, shelfBearing, wallRange = vision.Run()
 
             print("\n\n")
-
-            if len(itemsBearing) > 0:
-                print( "Amount of items: " + str(len(itemsBearing)))
-                for item in itemsBearing:
-                    print("Item Bearing: " + str(item))
+            print(wallRange)
+            # if len(itemsBearing) > 0:
+            #     print( "Amount of items: " + str(len(itemsBearing)))
+            #     for item in itemsBearing:
+            #         print("Item Bearing: " + str(item))
             
-            if len(obstaclesRangeBearing) > 0:
-                print( "Amount of obstacles:" + str(len(obstaclesRangeBearing)) )
-                for obstacle in obstaclesRangeBearing:
-                    print("Obstacle Bearing: " + str(obstacle[0]))
-                    print("Obstacle Distance: " + str(obstacle[1]))
+            # if len(obstaclesRangeBearing) > 0:
+            #     print( "Amount of obstacles:" + str(len(obstaclesRangeBearing)) )
+            #     for obstacle in obstaclesRangeBearing:
+            #         print("Obstacle Bearing: " + str(obstacle[0]))
+            #         print("Obstacle Distance: " + str(obstacle[1]))
 
             
-                print("Packing Bay Bearing: " + str(packingBayBearing))
+            #     print("Packing Bay Bearing: " + str(packingBayBearing))
 
             if len(bayMarkerRangeBearing) > 0:
                 print("Packing Bay Marker Range: " + str(bayMarkerRangeBearing[0]))
@@ -150,9 +145,9 @@ if __name__ == "__main__":
             led.toggle("all", "off")
             for rowMarker in rowMarkersRangeBearing:
                 if rowMarker:
-                    # print("This is row: " + str(rowMarker[0]))
-                    # print("Row Marker Range: " + str(rowMarker[1]))
-                    # print("Row Marker Bearing: " + str(rowMarker[2]))
+                    print("This is row: " + str(rowMarker[0]))
+                    print("Row Marker Range: " + str(rowMarker[1]))
+                    print("Row Marker Bearing: " + str(rowMarker[2]))
                     seen_rowmarker = rowMarker
 
             if len(shelfBearing) > 0:
@@ -169,7 +164,7 @@ if __name__ == "__main__":
 
 
 
-
+#-----------------------------------------------------------------------------------------------------------------------
             #### BEGIN STATE MACHINE
             print(state)
             if(state == "parked"):
@@ -180,12 +175,14 @@ if __name__ == "__main__":
                 time.sleep(0.1)
 
             elif(state == "drivingoutrow"):
-                lifter.set_height(0)
+                #lifter.set_height(0)
                 if(seen_rowmarker and seen_rowmarker[1] > 700):
                     state = "parked"
                 if(seen_rowmarker and seen_rowmarker[1] < 500):
                     targetBearing = seen_rowmarker[2]
                     # if(1):
+                elif(len(shelfBearing) == 2):
+                    targetBearing = (shelfBearing[0] + shelfBearing[1]) / 2
                 else:
                     targetBearing = None
                     #turn on spot right
@@ -211,14 +208,9 @@ if __name__ == "__main__":
             elif(state == "pickupitem"):
                 time.sleep(1)
                 board.motor_movement([board.M1], board.CCW, duty_cycle)
-                board.motor_movement([board.M2], board.CW, duty_cycle)
-                time.sleep(0.35)
-                board.motor_stop(board.ALL)   # stop all DC motor
-                grabber.Grab(1)
-                time.sleep(1)
                 board.motor_movement([board.M1], board.CW, duty_cycle)
                 board.motor_movement([board.M2], board.CCW, duty_cycle)
-                time.sleep(0.35)
+                time.sleep(0.5)
                 board.motor_movement([board.M1], board.CCW, 100)
                 board.motor_movement([board.M2], board.CCW, 100)
                 time.sleep(0.6)
@@ -227,7 +219,7 @@ if __name__ == "__main__":
                 time.sleep(1)
                 # board.motor_stop(board.ALL)   # stop all DC motor
                 
-
+                lifter.set_height(0)
                 state = "drivingoutrow"
 
             elif(state == "openloopturningtoshelf"):
@@ -236,7 +228,7 @@ if __name__ == "__main__":
                 # time.sleep(10)
                 # grab(2)
 
-
+                lifter.set_height(2)
                 # print(str(wallRange))
                 # time.sleep(1)
                 board.motor_movement([board.M1], board.CW, 100)
@@ -269,13 +261,21 @@ if __name__ == "__main__":
                   print("turn left")
                   board.motor_movement([board.M1], board.CW, slow_turn_speed)
                   board.motor_movement([board.M2], board.CW, slow_turn_speed)
+
             elif(state == "drivingdownrow"):
+                # lifter.set_height(1)
+                bay_lookup = [1550, 1000, 750]
+                print(bay_lookup[int(csv_array[item_index][2])])
                 #print(len(shelfBearing))
-                if(seen_rowmarker and seen_rowmarker[1] < 1800):
+                if(int(csv_array[item_index][2]) != 3):
+                    if(seen_rowmarker and seen_rowmarker[1] < bay_lookup[int(csv_array[item_index][2])]):
 
-                                    # if(seen_rowmarker[1] < 1600): # third bay is 450 second bay is 800 first bay is 1150
+                        # if(seen_rowmarker[1] < 1600): # second bay is 450 first bay is 800 0'th bay is 1150
 
-                    state = "turningtoshelf"
+                        state = "openloopturningtoshelf"
+                else:
+                    if(wallRange == "near"):
+                        state = "openloopturningtoshelf"
                 if(seen_rowmarker and seen_rowmarker[1] < 1200):
                     targetBearing = seen_rowmarker[2]
                     # if(1):
@@ -297,36 +297,53 @@ if __name__ == "__main__":
                         board.motor_movement([board.M2], board.CW, duty_cycle-targetBearing)
                     elif(targetBearing>0):
                         print("shuffle right")
-                        board.motor_movement([board.M1], board.CCW, duty_cycle)
+                        board.motor_movement([board.M1], board.CCW, turning_duty_cycle)
                         board.motor_movement([board.M2], board.CCW, duty_cycle/2)
                     else:
                         print("shuffle left")
                         board.motor_movement([board.M1], board.CW, duty_cycle/2)
-                        board.motor_movement([board.M2], board.CW, duty_cycle)
+                        board.motor_movement([board.M2], board.CW, turning_duty_cycle)
             elif(state == "liningupwithrow"):
                 #turn on spot left
+                
                 print("turn on spot left")
-                board.motor_movement([board.M1], board.CW, turning_duty_cycle)
-                board.motor_movement([board.M2], board.CW, turning_duty_cycle)                
+                board.motor_movement([board.M1], board.CW, slow_turn_speed)
+                board.motor_movement([board.M2], board.CW, slow_turn_speed)                
                 if(packingBayBearing):
-                    if(packingBayBearing < 1500):
-                      state = "drivingdownrow"
-                    board.motor_stop(board.ALL)   # stop all DC motor
                     if(abs(packingBayBearing)<10):
+                        if(bayMarkerRangeBearing and bayMarkerRangeBearing[0] < 1450): #
+                            print("PARKEDPARKEDPARKEDPARKEDPARKEDPARKEDPARKEDPARKED")
+                            state = "parked"
+                            board.motor_stop(board.ALL)   # stop all DC motor
                         #drive straight
                         print("drive straight")
-                        board.motor_movement([board.M1], board.CCW, duty_cycle)
-                        board.motor_movement([board.M2], board.CW, duty_cycle)
+                        board.motor_movement([board.M1], board.CCW, slow_turn_speed)
+                        board.motor_movement([board.M2], board.CW, slow_turn_speed)
                     elif(packingBayBearing>0):
                         print("shuffle right")
-                        LED("red", "on")
-                        board.motor_movement([board.M1], board.CCW, turning_duty_cycle)
-                        #board.motor_movement([board.M2], board.CW, duty_cycle)
+                        # LED("red", "on")
+                        board.motor_movement([board.M1], board.CCW, slow_turn_speed)
+                        board.motor_movement([board.M2], board.CW, slow_turn_speed/1.5)
                     else:
                         print("shuffle left")
-                        LED("green", "on")
-                        #board.motor_movement([board.M1], board.CCW, duty_cycle)
-                        board.motor_movement([board.M2], board.CW, turning_duty_cycle)                
+                        # LED("green", "on")
+                        board.motor_movement([board.M1], board.CCW, slow_turn_speed/1.5)
+                        board.motor_movement([board.M2], board.CW, slow_turn_speed) 
+
+                elif state == "searchingforrow":
+                    # Slowly rotate the robot to scan for row markers
+                    board.motor_movement([board.M1], board.CCW, slow_turn_speed)  # Rotate one track
+                    board.motor_movement([board.M2], board.CW, slow_turn_speed)   # In the opposite direction                    
+
+                    # Check if any row markers are detected
+                    if rowMarkersRangeBearing[0] is not None:  # Adjust this condition based on how rowMarkersRangeBearing is structured
+                        print("Row marker found, switching to driving down the row")
+                        state = "drivingdownrow"
+                        board.motor_stop(board.ALL)  # Stop rotating once the marker is found
+
+                    # If no row marker found, continue rotating
+                    else:
+                        print("Searching for row marker...")      
 
             print("\n\n")
 

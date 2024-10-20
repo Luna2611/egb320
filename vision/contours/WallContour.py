@@ -40,13 +40,13 @@ class WallContour:
             for line in lines:
                 x1, y1, x2, y2 = line[0]
                 wall_edges.append( [ [x1, y1], [x2, y2] ] ) 
-            if (wall_area > 15000):
-                range = "near"
+            if (wall_area > 25000):
+                range = "LINEnear_______________________________________________________"
             elif (wall_area > 0): 
                 range = "far"
         else:
             if (wall_area > 19000):
-                range = "near"
+                range = "NOnear_________________________________________________________"
             elif (wall_area > 0): 
                 range = "far"
                                     
