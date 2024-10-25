@@ -111,7 +111,7 @@ if __name__ == "__main__":
     lifter = Lifter()
     vision = Vision()
     vision.SetupCamera()
-    lifter.set_height(0)
+    lifter.set_height(1)
     try:
         while(1):
             #lifter.set_height(0)
@@ -207,7 +207,7 @@ if __name__ == "__main__":
 
             elif(state == "pickupitem"):
                 time.sleep(1)
-                board.motor_movement([board.M1], board.CCW, duty_cycle)
+                # board.motor_movement([board.M1], board.CCW, duty_cycle)
                 board.motor_movement([board.M1], board.CW, duty_cycle)
                 board.motor_movement([board.M2], board.CCW, duty_cycle)
                 time.sleep(0.5)

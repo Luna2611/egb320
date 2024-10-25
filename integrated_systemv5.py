@@ -182,16 +182,27 @@ if __name__ == "__main__":
             elif(state == "turnleftuntilNOshelf"):
                 if(shelfBearing):
                     board.motor_movement([board.M1], board.CW, turning_duty_cycle)
-                    board.motor_movement([board.M2], boardCW, turning_duty_cycle)
+                    board.motor_movement([board.M2], board.CW, turning_duty_cycle)
                 else:
                     state = "drivetorow1"
+                    board.motor_movement([board.M1], board.CCW, turning_duty_cycle)
+                    board.motor_movement([board.M2], board.CCW, turning_duty_cycle)
+                    time.sleep(0.2)
             elif(state == "drivetorow1"):
+                if(wallRange == "near"):
+                    state = "drivingdownrow"
+                    board.motor_stop(board.ALL)   # stop all DC motor
+                    lifter.set_height(1)
+                    time.sleep(1)
+                    # board.motor_movement([board.M1], board.CW, duty_cycle)
+                    # board.motor_movement([board.M2], board.CCW, duty_cycle)
+                    # time.sleep(0.3)
                 if(shelfBearing):
-                    board.motor_movement([board.M1], board.CW, duty_cycle/2)
-                    board.motor_movement([board.M2], board.CW, duty_cycle)
+                    board.motor_movement([board.M1], board.CCW, turning_duty_cycle/2)
+                    board.motor_movement([board.M2], board.CW, turning_duty_cycle)
                 else:
-                    board.motor_movement([board.M1], board.CCW, duty_cycle)
-                    board.motor_movement([board.M2], board.CCW, duty_cycle/2)
+                    board.motor_movement([board.M1], board.CCW, turning_duty_cycle)
+                    board.motor_movement([board.M2], board.CW, turning_duty_cycle/2)
             elif(state == "drivingoutrow"):
                 #lifter.set_height(0)
                 if(seen_rowmarker and seen_rowmarker[1] > 700):
