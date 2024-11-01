@@ -5,7 +5,7 @@ from scipy.spatial import distance
 class MarkerContour:
 
     lower_bound = np.array([0, 0, 0])
-    upper_bound = np.array([179, 110, 75])
+    upper_bound = np.array([160, 79, 66])
 
     mask = None
     scale_factor = 0
@@ -16,7 +16,8 @@ class MarkerContour:
     def GetContour(self, hsv_frame):
         # Apply Gaussian blur and morphological operations
         blurred_frame = cv2.GaussianBlur(hsv_frame, (5, 5), 0) 
-        self.mask = cv2.inRange(blurred_frame, self.lower_bound, self.upper_bound)           
+        self.mask = cv2.inRange(blurred_frame, self.lower_bound, self.upper_bound)
+        cv2.imshow("Marker", self.mask)           
 
         # Filter mask and find contours
         contours = self.__processMask()
@@ -25,31 +26,25 @@ class MarkerContour:
         bay_marker = []
         row_marker = []
 
-        # Detect both circles and square
+        # Detect circles
         for contour in contours:
             area = cv2.contourArea(contour)
             perimeter = cv2.arcLength(contour, True)
 
             # Circles
-            if perimeter > 0 and area > 10*self.scale_factor: 
+            if perimeter > 0 and area > 0.2*self.scale_factor: 
                 circularity = 4 * np.pi * (area / (perimeter ** 2))
-                if 0.75 < circularity < 1.3: # Circular threshold for aisle markers
+                
+                if 0.8 < circularity < 1: # Circular threshold for aisle markers
                     # Fit a minimum enclosing circle
                     (x, y), radius = cv2.minEnclosingCircle(contour)
                     center = (int(x), int(y))
                     radius = int(radius)
                     circles.append([center, radius])
-
-                # If not circular, check for square aspect ratio
-                    x, y, w, h = cv2.boundingRect(contour)
-                    aspect_ratio = float(w) / h
-                    if 1 : #0.3 < aspect_ratio < 1.1:  # Ensure it's approximately a square
-                        cX, cY = self.__calculateCentroid(contour)
-                        bay_marker = [[x, y], [w, h], [cX, cY]]
                     
         if len(circles) != 0:
             # Group the circles by proximity
-            circle_groups = self.__groupCircles(circles, threshold=600*self.scale_factor) 
+            circle_groups = self.__groupCircles(circles, threshold=1000*self.scale_factor) 
 
             # Label aisles based on the number of circles in each group
             for i, group in enumerate(circle_groups, start=1):
@@ -62,11 +57,18 @@ class MarkerContour:
                 else:
                     aisle_label = 3
 
-                #Calculate the average position to display the label
-                # Sum x and y coordinates separately
-                avg_x = int(sum([c[0][0] for c in group]) / len(group))  # Sum the x-coordinates
-                avg_y = int(sum([c[0][1] for c in group]) / len(group))  # Sum the y-coordinates
-                row_marker = [aisle_label, radius, avg_x, avg_y]
+                # Calculate the average position and radius for each group
+                avg_x, avg_y, avg_radius = self.__calculateGroupAverage(group)
+
+                # Store the result for row marker detection
+                row_marker = [aisle_label, avg_radius, avg_x, avg_y]
+
+        # Detect squares
+        if contours:
+            bay_marker_contour = max(contours, key=cv2.contourArea)
+            x, y, w, h = cv2.boundingRect(bay_marker_contour)
+            cX, cY = self.__calculateCentroid(bay_marker_contour)
+            bay_marker = [ [x, y] , [w, h], [cX, cY] ]
 
         return circles, bay_marker, row_marker
 
@@ -94,7 +96,30 @@ class MarkerContour:
             if not added:
                 groups.append([circle])
         return groups
-    
+
+    def __calculateGroupAverage(self, group):
+        """
+        Calculates the average position and radius for a group of circles.
+
+        Parameters:
+        ----------
+        group : list
+            A list of circles in the group (each represented by [center, radius]).
+
+        Returns:
+        -------
+        tuple
+            The average x, y position and radius for the group.
+        """
+        num_circles = len(group)
+
+        # Calculate the average x, y coordinates and radius
+        avg_x = int(sum([circle[0][0] for circle in group]) / num_circles)
+        avg_y = int(sum([circle[0][1] for circle in group]) / num_circles)
+        avg_radius = int(sum([circle[1] for circle in group]) / num_circles)
+
+        return avg_x, avg_y, avg_radius
+
     def __calculateCentroid(self, contour):
         # Calculate moments of the contour
         M = cv2.moments(contour)
@@ -107,4 +132,30 @@ class MarkerContour:
             cX, cY = 0, 0
 
         return cX, cY
+
+    def __getCorners(self, contour):
+        """
+        Extracts and returns the corners of the marker using cv2.minAreaRect.
+
+        Parameters
+        ----------
+        contour : np.array
+            The contour of the marker.
+
+        Returns
+        -------
+        np.array or None:
+            List of four corner points if contour is found, None otherwise.
+        """
+        if contour is not None:
+            # Get the minimum area rotated rectangle for the contour
+            rect = cv2.minAreaRect(contour)
+
+            # Get the four corner points of the rotated rectangle
+            box_points = cv2.boxPoints(rect)
+            box_points = np.int0(box_points)  # Convert to integer points
+
+            return box_points  # Return the four corner points as a list
+
+        return None  # If no valid contour is found
     

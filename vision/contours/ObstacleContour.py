@@ -26,10 +26,9 @@ class ObstacleContour:
         for contour in contours:
             area = cv2.contourArea(contour)
             if (area > 700*self.scale_factor):  # Adjust this threshold based on obstacle size
-                # Draw bounding box around each detected obstacle
                 x, y, w, h = cv2.boundingRect(contour)
                 cX, cY = self.__calculateCentroid(contour)
-                obstacles_coor.append([ [x, y] , [w, h], [cX, cY] ])
+                obstacles_coor.append( [ [x, y] , [w, h], [cX, cY] ] )
 
         return contours, obstacles_coor
 
@@ -56,4 +55,30 @@ class ObstacleContour:
             cX, cY = 0, 0
 
         return cX, cY
+
+    def __getCorners(self, contour):
+        """
+        Extracts and returns the corners of the marker using cv2.minAreaRect.
+
+        Parameters
+        ----------
+        contour : np.array
+            The contour of the marker.
+
+        Returns
+        -------
+        np.array or None:
+            List of four corner points if contour is found, None otherwise.
+        """
+        if contour is not None:
+            # Get the minimum area rotated rectangle for the contour
+            rect = cv2.minAreaRect(contour)
+
+            # Get the four corner points of the rotated rectangle
+            box_points = cv2.boxPoints(rect)
+            box_points = np.int0(box_points)  # Convert to integer points
+
+            return box_points  # Return the four corner points as a list
+
+        return None  # If no valid contour is found
     

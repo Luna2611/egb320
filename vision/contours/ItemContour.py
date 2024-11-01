@@ -3,8 +3,8 @@ import numpy as np
 
 class ItemContour:
 
-    lower_bound = np.array([96, 150, 110])
-    upper_bound = np.array([110, 255, 255])
+    lower_bound = np.array([80, 170, 100]) #96
+    upper_bound = np.array([150, 255, 255])
 
     mask = None
     scale_factor = 0    
@@ -17,6 +17,7 @@ class ItemContour:
         # Apply Gaussian blur and morphological operations
         blurred_frame = cv2.GaussianBlur(hsv_frame, (5, 5), 0)
         self.mask = cv2.inRange(blurred_frame, self.lower_bound, self.upper_bound)
+        cv2.imshow("Item", self.mask)
 
         # Filter mask and find contours
         contours = self.__processMask()         

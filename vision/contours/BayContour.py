@@ -3,8 +3,8 @@ import numpy as np
 
 class BayContour:
 
-    lower_bound = np.array([86, 50, 0])
-    upper_bound = np.array([97, 191, 237])
+    lower_bound = np.array([50, 70, 180]) #hue was 92
+    upper_bound = np.array([96, 166, 255])
 
     mask = None 
     scale_factor = 0   
@@ -16,6 +16,7 @@ class BayContour:
         
         blurred_frame = cv2.GaussianBlur(hsv_frame, (5, 5), 0)
         self.mask = cv2.inRange(blurred_frame, self.lower_bound, self.upper_bound)
+        cv2.imshow("Packing Bay", self.mask)
 
         # Filter mask and find contours
         contours = []

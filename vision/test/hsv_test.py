@@ -1,18 +1,17 @@
 import cv2
 import picamera2
 import numpy as np
-import time
 
-def nothing(*arg):
-        pass
+FRAME_WIDTH = 820
+FRAME_HEIGHT = 616
 
-FRAME_WIDTH = 420
-FRAME_HEIGHT = 308
+def nothing():
+    pass
 
-#create a camera object
+# Create a camera object
 cap = picamera2.Picamera2()
-cap.controls.ExposureTime = 5000
-cap.controls.AnalogueGain = 0.8
+cap.set_controls({"ExposureTime": 7000, "AnalogueGain": 1.1})  # Set manual values
+cap.set_controls({"FrameDurationLimits": (10000, 15000)})  # Set min to 10ms and max to 15 ms for a fixed frame rate
 
 #print the different camera resolutions/modes 
 #the sensor can be configured for
@@ -31,18 +30,17 @@ cv2.createTrackbar('highHue', 'colorTest', iVal[3], 179, nothing)
 cv2.createTrackbar('highSat', 'colorTest', iVal[4], 255, nothing)
 cv2.createTrackbar('highVal', 'colorTest', iVal[5], 255, nothing)
 
-#set a specific configuration, smaller resolution will be faster
-#however will have a cropped field of view
-#consider a balance between higher resolution, field of view and frame rate
-#config = cap.create_video_configuration(main={"format":'XRGB8888',"size":(FRAME_WIDTH, FRAME_HEIGHT)})
-config = cap.create_video_configuration(main={"format":'RGB888',"size":(FRAME_WIDTH, FRAME_HEIGHT)})
+'''set a specific configuration, smaller resolution will be faster
+however will have a cropped field of view
+consider a balance between higher resolution, field of view and frame rate'''
+# config = cap.create_video_configuration(main={"format":'XRGB8888',"size":(FRAME_WIDTH, FRAME_HEIGHT)})
+config = cap.create_video_configuration(main={"format": 'RGB888', "size": (FRAME_WIDTH, FRAME_HEIGHT)})
 cap.configure(config)
 
-#start the camera
+# start the camera
 cap.start()
 
-while(1):
-    t1 = time.time()                     # for measuring fps
+while 1:
 
     # Get HSV value from the sliders
     lowHue = cv2.getTrackbarPos('lowHue', 'colorTest')
@@ -72,20 +70,17 @@ while(1):
     contour_sizes = [(cv2.contourArea(contour), contour) for contour in contours]
     if len(contour_sizes) > 0:
          
-        biggest_contour = max(contour_sizes, key=lambda x: x[0])[1]
+        biggest_contour = max(contour_sizes, key=lambda i: i[0])[1]
 
         x, y, w, h = cv2.boundingRect(biggest_contour)
-        cv2.rectangle(frame, (x,y), (x+w, y+h), (0, 255, 0), 2)
+        cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
 
     # Show output frame
     cv2.imshow("hsvTest", frame)
 
     k = cv2.waitKey(5) & 0xFF   # Make the program wait for 5ms before continuing (also required to display image).
-    if k == 27: # Esc key
+    if k == 27:  # Esc key
         break
-
-    fps = 1.0/(time.time() - t1)         # calculate frame rate
-    print("Frame Rate: ", int(fps), end="\r")
 
 cap.close()
 cv2.destroyAllWindows()

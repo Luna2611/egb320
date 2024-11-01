@@ -6,8 +6,8 @@ class WallContour:
     scale_factor = 0
     mask = 0 
 
-    lower_bound = np.array([48, 0, 191])
-    upper_bound = np.array([124, 20, 227])
+    lower_bound = np.array([0, 0, 170])
+    upper_bound = np.array([179, 40, 215])
 
 
     def __init__(self, scale_factor):
@@ -34,17 +34,23 @@ class WallContour:
 
         for contour in contours:
             area = cv2.contourArea(contour)
-            wall_area += area
-
-        if (wall_area > 40000*self.scale_factor):
-            range = "near"
-        elif (wall_area > 0): 
-            range = "far"
+            wall_area += area       
         
         if lines is not None:
             for line in lines:
-                    x1, y1, x2, y2 = line[0]
-                    wall_edges.append( [ [x1, y1], [x2, y2] ] ) 
+                x1, y1, x2, y2 = line[0]
+                wall_edges.append( [ [x1, y1], [x2, y2] ] ) 
+            if (wall_area > 29000):
+                range = "near"
+            elif (wall_area > 0): 
+                range = "far"
+        else:
+            if (wall_area > 29000):
+                range = "near"
+            elif (wall_area > 0): 
+                range = "far"
+
+        print(wall_area)
                                     
         return wall_edges, range
     
