@@ -5,7 +5,7 @@ from scipy.spatial import distance
 class MarkerContour:
 
     lower_bound = np.array([0, 0, 0])
-    upper_bound = np.array([179, 79, 66])
+    upper_bound = np.array([160, 79, 66])
 
     mask = None
     scale_factor = 0

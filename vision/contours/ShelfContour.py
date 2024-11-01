@@ -3,7 +3,7 @@ import numpy as np
 
 class ShelfContour:
 
-    lower_bound = np.array([0, 108, 24])
+    lower_bound = np.array([0, 108, 0])
     upper_bound = np.array([20, 255, 255])
 
     mask = None

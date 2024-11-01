@@ -105,7 +105,7 @@ if __name__ == "__main__":
 duty_cycle = 65
 turning_duty_cycle = 90
 slow_turn_speed = 70
-state = "drivingdownrow" # liningupwithrow
+state = "parked" # liningupwithrow
 if __name__ == "__main__":   
     grabber = Grabber()
     lifter = Lifter()
@@ -207,7 +207,12 @@ if __name__ == "__main__":
 
             elif(state == "pickupitem"):
                 time.sleep(1)
-                # board.motor_movement([board.M1], board.CCW, duty_cycle)
+                board.motor_movement([board.M1], board.CCW, duty_cycle)
+                board.motor_movement([board.M2], board.CW, duty_cycle)
+                time.sleep(0.5)
+                board.motor_stop(board.ALL)   # stop all DC motor
+                grabber.Grab(1)
+                # time.sleep(1)
                 board.motor_movement([board.M1], board.CW, duty_cycle)
                 board.motor_movement([board.M2], board.CCW, duty_cycle)
                 time.sleep(0.5)

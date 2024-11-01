@@ -16,7 +16,7 @@ with open("Order_1.csv", mode="r", encoding='utf-8-sig') as csv_file:
 
 print(csv_array)
 
-item_index = 5
+item_index = 4
 
 print(csv_array[item_index][2])#[item_index])
 
@@ -102,9 +102,9 @@ if __name__ == "__main__":
 
 ###end motor initialisation
 ###constants
-duty_cycle = 60
-turning_duty_cycle = 80
-slow_turn_speed = 70
+duty_cycle = 65
+turning_duty_cycle = 81
+slow_turn_speed = 73
 state = "point_to_packingbay" # turnrightuntilshelf
 if __name__ == "__main__":   
     grabber = Grabber()
@@ -167,13 +167,16 @@ if __name__ == "__main__":
 #-----------------------------------------------------------------------------------------------------------------------
             #### BEGIN STATE MACHINE
             print(state)
+            # if(state == "leave"):
+
+
             if(state == "walltest"):
                 print("drive straight")
                 board.motor_movement([board.M1], board.CCW, duty_cycle)
                 board.motor_movement([board.M2], board.CW, duty_cycle)
                 if(wallRange == "near"):
                     board.motor_stop(board.ALL)   # stop all DC motor
-                    lifter.set_height(1)
+                    lifter.set_height(2)
                     state = "drivingdownrow"
             elif(state == "parked"):
                 # grabber.Grab(0)
@@ -181,6 +184,7 @@ if __name__ == "__main__":
                 # grabber.Grab(1)
                 # time.sleep(2)
                 time.sleep(0.1)
+                state = "localising"
             elif(state == "turnrightuntilshelf"):
                 if(shelfBearing):
                     state = "turnleftuntilNOshelf"
@@ -245,7 +249,7 @@ if __name__ == "__main__":
                 time.sleep(1)
                 board.motor_movement([board.M1], board.CCW, duty_cycle)
                 board.motor_movement([board.M2], board.CW, duty_cycle)
-                time.sleep(0.5)
+                time.sleep(0.6)
                 board.motor_stop(board.ALL)   # stop all DC motor
                 grabber.Grab(1)
                 # time.sleep(1)
@@ -306,7 +310,7 @@ if __name__ == "__main__":
 
             elif(state == "drivingdownrow"):
                 # lifter.set_height(1)
-                bay_lookup = [1200, 800, 400] #1550, 2000, 2500
+                bay_lookup = [1600, 1300, 900] #1550, 2000, 2500
                 print(csv_array[item_index][2])
                 #print(len(shelfBearing))
                 if(int(csv_array[item_index][2]) != 3):
@@ -319,10 +323,11 @@ if __name__ == "__main__":
                 else:
                     if(wallRange == "near"):
                         state = "openloopturningtoshelf"
-                if(seen_rowmarker and seen_rowmarker[1] < 800):
+                if(seen_rowmarker and seen_rowmarker[1] < 1100):
+                    print("ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ")
                     targetBearing = seen_rowmarker[2]
                     # if(1):
-                elif(len(shelfBearing) >= 2):
+                elif(len(shelfBearing) == 2):
                     targetBearing = (sum(shelfBearing)) / len(shelfBearing)
                     print("YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY")
                 else:
@@ -340,12 +345,12 @@ if __name__ == "__main__":
                         board.motor_movement([board.M2], board.CW, duty_cycle-targetBearing)
                     elif(targetBearing>0):
                         print("shuffle right")
-                        board.motor_movement([board.M1], board.CCW, duty_cycle)
-                        board.motor_movement([board.M2], board.CCW, duty_cycle/2)
+                        board.motor_movement([board.M1], board.CCW, slow_turn_speed)
+                        board.motor_movement([board.M2], board.CCW, slow_turn_speed/2)
                     else:
                         print("shuffle left")
-                        board.motor_movement([board.M1], board.CW, duty_cycle/2)
-                        board.motor_movement([board.M2], board.CW, duty_cycle)
+                        board.motor_movement([board.M1], board.CW, slow_turn_speed/2)
+                        board.motor_movement([board.M2], board.CW, slow_turn_speed)
             elif(state == "point_to_packingbay"):
                 #turn on spot left
                 print("turn on spot left")
@@ -378,8 +383,10 @@ if __name__ == "__main__":
                 if packingBayBearing or bayMarkerRangeBearing:
                     board.motor_movement([board.M1], board.CCW, slow_turn_speed)
                     board.motor_movement([board.M2], board.CW, slow_turn_speed)
-                elif rowMarkersRangeBearing:
-                    state = "drivingdownrow "        
+                else:
+                    board.motor_movement([board.M1], board.CCW, turning_duty_cycle)
+                    board.motor_movement([board.M2], board.CCW, turning_duty_cycle)
+                    #state = "drivingdownrow "        
 
             print("\n\n")
 
